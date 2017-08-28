@@ -1,0 +1,60 @@
+* input_file 
+* 
+
+!ensemble nensem 16 outname "data/output/eef1sb.out"
+
+prnlev 2
+bomlev -1 
+set nrep ?nensem 
+set node ?whoiam 
+! read topology and parameter files
+ read rtf card name "top_all36_prot_eef1sb.rtf"
+ read param card flex name  "param_all36_eef1sb.prm"
+ open read card unit 10 name  "hewl19.psf"
+ read psf card unit 10
+ close unit 10
+ !ensemble open read card unit 10 name "hewl19_random.pdb"
+ open read card unit 10 name "hewl19_random.pdb"
+ read coor pdb unit 10
+ !ensemble close unit 10
+ ensemble close unit 10
+ close unit 10
+ print coor
+faster on
+!bomlev 0
+
+! THIS SETS UP EEF1 IMPLICIT SOLVENT 
+eef1 setup temp 298.15 unit 95 name "solvpar_eef1sb.inp"
+nbonds elec  switch  group  rdie vdw  vswitch vgroup - 
+cutnb 13.0 ctofnb 9.0 ctonnb 7.0 - 
+wmin 1.2 eps 1.5 e14f 1.0 nbxm 5 
+
+eef1 print 
+
+!mini abnr nstep 3000
+
+stop
+!open write card unit 10 name  "/home/sb869/simulations/input/aaqaa_init.pdb"
+!coor write pdb unit 10 
+close unit 10
+open unit 50 write card name "data/rex/rep_t_aaqaa_final.dat" 
+open unit 51 write card name "data/rex/t_rep_aaqaa_final.dat" 
+ensemble exchange freq 200 rep2to 50 t2repo 51 - 
+	 278.0 288.0 298.15 304.5 318.6 333.5 349.0 365.2 382.2 400.0 418.6 438.1 458.5 479.8 502.2 525.5
+ensemble info 
+set t ?ensmyt 
+! set friction on each non hydrogen atom to 1. 1/ps 
+scalar fbeta set 1.0 sele .not. type H* show end 
+shake bond param tol 1.e-7
+ensemble open unit 20 write file name "data/traj/aaqaa_final_@NODE.dcd" 
+dyna leap langevin start timestep 0.002 rbuf 0. tbuf @T - 
+     firstt  @T finalt  @T iuncrd 20 iunrea 10 - 
+     nprint 10000 inbfrq 20 -
+     kunit 22 nstep  250000000.0 nsavc 25000 - 
+     nprint 10000 
+ ENSEMBLE CLOSE UNIT 20 
+
+stop 
+!     kunit 22 nstep  25000.0 nsavc 25000 - 
+
+
